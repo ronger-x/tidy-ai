@@ -1,5 +1,5 @@
 # ---- Build stage ----
-FROM node:22-alpine AS builder
+FROM node:22 AS builder
 
 # Enable corepack for pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -20,7 +20,7 @@ COPY . .
 RUN pnpm build
 
 # ---- Runtime stage ----
-FROM node:22-alpine AS runner
+FROM node:22 AS runner
 
 WORKDIR /app
 
@@ -28,6 +28,7 @@ WORKDIR /app
 # 避免在运行阶段重新安装时因可选依赖缺失导致 libsql 无法加载
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.output ./.output
+COPY --from=builder /app/server/db/migrations ./server/db/migrations
 COPY package.json ./
 
 # Data directory for SQLite db (will be mounted as a volume)
