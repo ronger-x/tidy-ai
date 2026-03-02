@@ -10,7 +10,8 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies (frozen lockfile for reproducible builds)
-RUN pnpm install --frozen-lockfile
+# 强制安装 optionalDependencies，避免 libsql 平台原生包在 Alpine 环境被跳过
+RUN pnpm install --frozen-lockfile --no-optional=false
 
 # Copy source
 COPY . .
