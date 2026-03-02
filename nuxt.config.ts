@@ -37,6 +37,10 @@ export default defineNuxtConfig({
     experimental: {
       openAPI: true,
     },
+    // 不打包含原生二进制的包，让 Node.js 在运行时从 node_modules 直接解析
+    externals: {
+      external: ['@libsql/client', 'libsql'],
+    },
   },
 
   experimental: {
