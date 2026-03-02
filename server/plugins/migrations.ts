@@ -3,8 +3,13 @@ import { db } from '~~/server/db/index';
 import { resolve } from 'node:path';
 
 export default defineNitroPlugin(async () => {
-  await migrate(db, {
-    migrationsFolder: resolve('./server/db/migrations'),
-  });
-  console.log('[db] Migrations applied');
+  try {
+    await migrate(db, {
+      migrationsFolder: resolve('./server/db/migrations'),
+    });
+    console.log('[db] Migrations applied');
+  } catch (error) {
+    console.error('[db] Migration failed:', error);
+    throw error;
+  }
 });
