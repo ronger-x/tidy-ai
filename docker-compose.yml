@@ -1,0 +1,21 @@
+services:
+  tidy-ai:
+    build: .
+    container_name: tidy-ai
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persist SQLite database across restarts
+      - tidy-data:/app/data
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=/app/data/tidy.db
+      # Override these in a .env file or via Docker secrets
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+
+volumes:
+  tidy-data:
+    driver: local

@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1772418348769,
+      "tag": "0000_medical_juggernaut",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1772419068399,
+      "tag": "0001_slim_the_santerians",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1772420378754,
+      "tag": "0002_tired_wrecking_crew",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1772500000000,
+      "tag": "0003_conversations",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1772600000000,
+      "tag": "0004_task_source_key",
+      "breakpoints": true
+    }
+  ]
+}
