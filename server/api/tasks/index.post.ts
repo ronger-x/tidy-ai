@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db, schema } from '~~/server/db/index';
 
 const taskInputSchema = z.object({
@@ -25,19 +25,19 @@ const bodySchema = z.object({
 /**
  * 根据名称查找或创建房间，返回房间 ID
  */
-async function upsertRoom(name: string): Promise<number> {
+async function upsertRoom(name: string, userId: number): Promise<number> {
   const trimmed = name.trim();
   const existing = await db
     .select({ id: schema.rooms.id })
     .from(schema.rooms)
-    .where(eq(schema.rooms.name, trimmed))
+    .where(and(eq(schema.rooms.name, trimmed), eq(schema.rooms.userId, userId)))
     .get();
 
   if (existing) return existing.id;
 
   const created = await db
     .insert(schema.rooms)
-    .values({ name: trimmed })
+    .values({ name: trimmed, userId })
     .returning({ id: schema.rooms.id })
     .get();
 
@@ -45,14 +45,16 @@ async function upsertRoom(name: string): Promise<number> {
 }
 
 export default defineEventHandler(async (event) => {
+  const userId = event.context.userId as number;
   const { tasks } = await readValidatedBody(event, bodySchema.parse);
 
   // Resolve room names → room IDs
   const values = await Promise.all(
     tasks.map(async ({ room, key, ...rest }) => ({
       ...rest,
+      userId,
       sourceKey: key || null,
-      roomId: room ? await upsertRoom(room) : null,
+      roomId: room ? await upsertRoom(room, userId) : null,
     })),
   );
 

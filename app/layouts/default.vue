@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { LazyModalConfirm } from '#components';
 import type { UIConversation } from '~/composables/useConversations';
-
-const route = useRoute();
 const router = useRouter();
 const chatStore = useChatStore();
 const conversationsStore = useConversationsStore();
@@ -63,12 +61,6 @@ async function deleteConversation(id: number) {
   });
 }
 
-// ── Navigation ────────────────────────────────────────────────────────────────
-const navLinks = [
-  { to: '/tasks', label: '任务清单', icon: 'i-lucide-check-square' },
-  { to: '/settings', label: '设置', icon: 'i-lucide-settings' },
-];
-
 async function loadConversation(id: number) {
   await chatStore.loadConversation(id);
   await router.push('/');
@@ -77,6 +69,16 @@ async function loadConversation(id: number) {
 function newChat() {
   chatStore.clear();
   router.push('/');
+}
+
+// ── Collapsible conversation groups ───────────────────────────────────────────
+const collapsedGroups = ref(new Set<string>());
+
+function toggleGroup(id: string) {
+  const next = new Set(collapsedGroups.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  collapsedGroups.value = next;
 }
 
 // ── Keyboard shortcuts ────────────────────────────────────────────────────────
@@ -102,21 +104,27 @@ defineShortcuts({
       :min-size="12"
       collapsible
       resizable
-      class="border-r-0 py-4"
+      class="bg-elevated/25"
+      :ui="{ footer: 'lg:border-t lg:border-default' }"
     >
-      <!-- Header: logo + new chat button -->
+      <!-- Header: logo + 折叠按钮 -->
       <template #header="{ collapsed }">
-        <NuxtLink
-          to="/"
-          class="text-highlighted flex items-end gap-1.5"
-          @click="sidebarOpen = false"
+        <div
+          class="flex w-full items-center"
+          :class="collapsed ? 'justify-center' : 'justify-between'"
         >
-          <UIcon
-            name="i-lucide-sparkles"
-            class="text-primary size-6 shrink-0"
-          />
-          <span v-if="!collapsed" class="text-lg font-bold">Tidy AI</span>
-        </NuxtLink>
+          <NuxtLink
+            to="/"
+            class="text-highlighted flex items-end gap-1.5"
+            @click="sidebarOpen = false"
+          >
+            <UIcon
+              name="i-lucide-sparkles"
+              class="text-primary size-6 shrink-0"
+            />
+            <span v-if="!collapsed" class="text-lg font-bold">Tidy AI</span>
+          </NuxtLink>
+        </div>
       </template>
 
       <!-- Body: new chat button + conversation list -->
@@ -158,66 +166,57 @@ defineShortcuts({
             :key="group.id"
             class="mb-3 flex flex-col gap-0.5"
           >
-            <p
-              class="text-muted mb-1 px-2 text-[11px] font-semibold tracking-wider uppercase"
-            >
-              {{ group.label }}
-            </p>
-            <div
-              v-for="conv in group.items"
-              :key="conv.id"
-              class="group/conv flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors"
-              :class="
-                chatStore.currentConversationId === conv.id
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'text-default hover:bg-elevated cursor-pointer'
-              "
-              @click="loadConversation(conv.id)"
+            <button
+              class="text-muted hover:text-highlighted mb-1 flex w-full cursor-pointer items-center gap-1 px-2 text-[11px] font-semibold tracking-wider uppercase transition-colors"
+              @click="toggleGroup(group.id)"
             >
               <UIcon
-                name="i-lucide-message-circle"
-                class="size-3.5 shrink-0 opacity-60"
+                :name="
+                  collapsedGroups.has(group.id)
+                    ? 'i-lucide-chevron-right'
+                    : 'i-lucide-chevron-down'
+                "
+                class="size-3 shrink-0"
               />
-              <span class="min-w-0 flex-1 truncate">{{ conv.label }}</span>
-              <UButton
-                icon="i-lucide-trash-2"
-                variant="ghost"
-                color="error"
-                size="xs"
-                class="invisible shrink-0 group-hover/conv:visible"
-                @click.stop="deleteConversation(conv.id)"
-              />
-            </div>
+              {{ group.label }}
+              <span class="text-dimmed ml-auto text-[10px] font-normal">
+                {{ group.items.length }}
+              </span>
+            </button>
+            <template v-if="!collapsedGroups.has(group.id)">
+              <div
+                v-for="conv in group.items"
+                :key="conv.id"
+                class="group/conv flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors"
+                :class="
+                  chatStore.currentConversationId === conv.id
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'text-default hover:bg-elevated cursor-pointer'
+                "
+                @click="loadConversation(conv.id)"
+              >
+                <UIcon
+                  name="i-lucide-message-circle"
+                  class="size-3.5 shrink-0 opacity-60"
+                />
+                <span class="min-w-0 flex-1 truncate">{{ conv.label }}</span>
+                <UButton
+                  icon="i-lucide-trash-2"
+                  variant="ghost"
+                  color="error"
+                  size="xs"
+                  class="invisible shrink-0 group-hover/conv:visible"
+                  @click.stop="deleteConversation(conv.id)"
+                />
+              </div>
+            </template>
           </div>
         </template>
       </template>
 
-      <!-- Footer: nav links + color mode -->
+      <!-- Footer: 用户菜单 -->
       <template #footer="{ collapsed }">
-        <div class="flex flex-col gap-1">
-          <NuxtLink v-for="link in navLinks" :key="link.to" :to="link.to">
-            <UButton
-              v-bind="
-                collapsed
-                  ? { icon: link.icon }
-                  : { label: link.label, leadingIcon: link.icon }
-              "
-              :color="route.path === link.to ? 'primary' : 'neutral'"
-              :variant="route.path === link.to ? 'soft' : 'ghost'"
-              block
-              :class="collapsed ? '' : 'justify-start'"
-            />
-          </NuxtLink>
-          <USeparator class="my-1" />
-          <div
-            :class="
-              collapsed ? 'flex justify-center' : 'flex items-center gap-2 px-1'
-            "
-          >
-            <UColorModeButton size="sm" variant="ghost" color="neutral" />
-            <span v-if="!collapsed" class="text-muted text-xs">颜色模式</span>
-          </div>
-        </div>
+        <UserMenu :collapsed="collapsed" />
       </template>
     </UDashboardSidebar>
 

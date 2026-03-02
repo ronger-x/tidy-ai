@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, schema } from '~~/server/db/index';
 
@@ -11,6 +11,7 @@ const bodySchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
+  const userId = event.context.userId as number;
   const id = Number(getRouterParam(event, 'providerId'));
   const body = await readValidatedBody(event, bodySchema.parse);
 
@@ -24,7 +25,9 @@ export default defineEventHandler(async (event) => {
   const [row] = await db
     .update(schema.providers)
     .set(patch)
-    .where(eq(schema.providers.id, id))
+    .where(
+      and(eq(schema.providers.id, id), eq(schema.providers.userId, userId)),
+    )
     .returning();
 
   if (!row)

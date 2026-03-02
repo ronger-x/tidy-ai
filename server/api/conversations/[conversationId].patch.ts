@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, schema } from '~~/server/db/index';
 
@@ -8,6 +8,7 @@ const bodySchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
+  const userId = event.context.userId as number;
   const id = Number(getRouterParam(event, 'conversationId'));
   if (isNaN(id)) throw createError({ statusCode: 400, message: 'Invalid id' });
 
@@ -20,7 +21,12 @@ export default defineEventHandler(async (event) => {
   const [row] = await db
     .update(schema.conversations)
     .set(updates)
-    .where(eq(schema.conversations.id, id))
+    .where(
+      and(
+        eq(schema.conversations.id, id),
+        eq(schema.conversations.userId, userId),
+      ),
+    )
     .returning();
 
   if (!row) throw createError({ statusCode: 404, message: 'Not found' });

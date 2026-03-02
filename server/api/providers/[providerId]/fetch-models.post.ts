@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import OpenAI from 'openai';
 import { db, schema } from '~~/server/db/index';
 
@@ -8,12 +8,15 @@ import { db, schema } from '~~/server/db/index';
  * Upserts results into the models table (preserves existing enabled state).
  */
 export default defineEventHandler(async (event) => {
+  const userId = event.context.userId as number;
   const id = Number(getRouterParam(event, 'providerId'));
 
   const [provider] = await db
     .select()
     .from(schema.providers)
-    .where(eq(schema.providers.id, id))
+    .where(
+      and(eq(schema.providers.id, id), eq(schema.providers.userId, userId)),
+    )
     .limit(1);
 
   if (!provider)

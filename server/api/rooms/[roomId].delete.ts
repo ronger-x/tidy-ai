@@ -1,8 +1,9 @@
 import { db, schema } from '~~/server/db/index';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 /** 删除房间（任务中的 roomId 会被自动置为 null） */
 export default defineEventHandler(async (event) => {
+  const userId = event.context.userId as number;
   const roomIdStr = getRouterParam(event, 'roomId');
   const roomId = Number(roomIdStr);
 
@@ -12,7 +13,7 @@ export default defineEventHandler(async (event) => {
 
   const [deleted] = await db
     .delete(schema.rooms)
-    .where(eq(schema.rooms.id, roomId))
+    .where(and(eq(schema.rooms.id, roomId), eq(schema.rooms.userId, userId)))
     .returning();
 
   if (!deleted) {

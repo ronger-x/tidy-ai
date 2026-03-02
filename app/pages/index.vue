@@ -1,11 +1,12 @@
 <template>
   <div class="flex h-full flex-col">
     <!-- 会话标题 header -->
-    <div
-      v-if="chatStore.messages.length > 0 && currentTitle"
-      class="border-default flex h-12 shrink-0 items-center border-b px-6"
-    >
-      <h2 class="text-highlighted truncate text-sm font-semibold">
+    <div class="border-default flex h-12 shrink-0 items-center border-b px-4">
+      <UDashboardSidebarCollapse />
+      <h2
+        v-if="chatStore.messages.length > 0 && currentTitle"
+        class="text-highlighted truncate text-sm font-semibold"
+      >
         {{ currentTitle }}
       </h2>
     </div>
@@ -305,7 +306,7 @@
               v-model="selectedModelId"
               :items="modelOptions"
               value-key="value"
-              placeholder="默认模型"
+              placeholder="选择模型"
               size="xs"
               class="w-56"
               :ui="{ content: 'w-72' }"
@@ -419,9 +420,9 @@ function removeImage(idx: number) {
 // ── Model selection ──────────────────────────────────────────────────────────
 
 const selectedModelId = computed({
-  get: () => providersStore.selectedModelId,
-  set: (v) => {
-    providersStore.selectedModelId = v;
+  get: () => providersStore.selectedModelId ?? undefined,
+  set: (v: number | undefined) => {
+    providersStore.selectedModelId = v ?? null;
   },
 });
 
@@ -430,13 +431,12 @@ onMounted(() => {
   tasksStore.fetch();
 });
 
-const modelOptions = computed(() => [
-  { label: '默认模型（环境变量）', value: null },
-  ...providersStore.enabledModels.map((m) => ({
+const modelOptions = computed(() =>
+  providersStore.enabledModels.map((m) => ({
     label: `${m.providerName ?? '?'} / ${m.modelId}`,
     value: m.id,
   })),
-]);
+);
 
 const selectedModelLabel = computed(() => {
   if (!selectedModelId.value) return undefined;
@@ -463,12 +463,41 @@ function stripTasksBlock(content: string) {
 async function handleSend() {
   const text = inputText.value.trim();
   if (!text || chatStore.streaming) return;
+
+  // 校验模型配置
+  if (providersStore.enabledModels.length === 0) {
+    toast.add({
+      title: '请先配置 AI 供应商',
+      description: '前往设置页面添加供应商并启用模型后即可开始对话',
+      icon: 'i-lucide-alert-triangle',
+      color: 'warning',
+      actions: [
+        {
+          label: '前往设置',
+          onClick: () => {
+            navigateTo('/settings');
+          },
+        },
+      ],
+    });
+    return;
+  }
+  if (!selectedModelId.value) {
+    toast.add({
+      title: '请选择模型',
+      description: '请在输入框下方选择一个 AI 模型后再发送消息',
+      icon: 'i-lucide-alert-triangle',
+      color: 'warning',
+    });
+    return;
+  }
+
   inputText.value = '';
   const images = pendingImages.value.slice();
   pendingImages.value = [];
   await chatStore.send(
     text,
-    selectedModelId.value ?? undefined,
+    selectedModelId.value,
     selectedModelLabel.value,
     images.length ? images : undefined,
   );

@@ -6,6 +6,7 @@
       <div class="border-default flex w-60 shrink-0 flex-col border-r lg:w-64">
         <!-- Search + add -->
         <div class="border-default flex items-center gap-2 border-b px-3 py-2">
+          <UDashboardSidebarCollapse />
           <UInput
             v-model="sidebarSearch"
             placeholder="搜索服务商..."

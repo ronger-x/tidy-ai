@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { db, schema } from '~~/server/db/index';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 const bodySchema = z.object({
   status: z.enum(['todo', 'in_progress', 'done']).optional(),
@@ -14,6 +14,7 @@ const bodySchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
+  const userId = event.context.userId as number;
   const taskIdStr = getRouterParam(event, 'taskId');
   const taskId = Number(taskIdStr);
 
@@ -33,7 +34,7 @@ export default defineEventHandler(async (event) => {
     const current = await db
       .select({ recurrenceInterval: schema.tasks.recurrenceInterval })
       .from(schema.tasks)
-      .where(eq(schema.tasks.id, taskId))
+      .where(and(eq(schema.tasks.id, taskId), eq(schema.tasks.userId, userId)))
       .get();
 
     const interval = updates.recurrenceInterval ?? current?.recurrenceInterval;
@@ -45,7 +46,7 @@ export default defineEventHandler(async (event) => {
   const [updated] = await db
     .update(schema.tasks)
     .set({ ...updates, ...extra, updatedAt: new Date() })
-    .where(eq(schema.tasks.id, taskId))
+    .where(and(eq(schema.tasks.id, taskId), eq(schema.tasks.userId, userId)))
     .returning();
 
   if (!updated) {

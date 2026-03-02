@@ -14,12 +14,13 @@ const querySchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
+  const userId = event.context.userId as number;
   const { status, category, roomId, dueToday } = await getValidatedQuery(
     event,
     querySchema.parse,
   );
 
-  const conditions = [];
+  const conditions = [eq(schema.tasks.userId, userId)];
 
   if (status !== 'all') conditions.push(eq(schema.tasks.status, status));
   if (category !== 'all') conditions.push(eq(schema.tasks.category, category));

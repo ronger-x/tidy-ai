@@ -48,9 +48,12 @@ export default defineEventHandler(async (event) => {
           : body.userFirstMessage;
   }
 
+  const userId = event.context.userId as number;
+
   const [row] = await db
     .insert(schema.conversations)
     .values({
+      userId,
       title,
       messages: body.messages,
       createdAt: now,

@@ -3,8 +3,16 @@
  * Manually mirrored from server/db/schema.ts to avoid cross-boundary imports
  */
 
+export interface AuthUser {
+  id: number;
+  username: string;
+  name: string;
+  avatar: string;
+}
+
 export interface Provider {
   id: number;
+  userId: number | null;
   name: string;
   baseUrl: string;
   /** apiKey is redacted on the client (returned as empty string) */

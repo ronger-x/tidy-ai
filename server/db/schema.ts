@@ -1,11 +1,36 @@
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 /**
+ * 用户表
+ * 支持简单的用户名/密码认证，适合家庭服务器场景
+ */
+export const users = sqliteTable('users', {
+  id: integer().primaryKey({ autoIncrement: true }),
+  username: text().notNull().unique(),
+  /** scrypt 哈希后的密码 */
+  passwordHash: text().notNull(),
+  /** 显示名称 */
+  name: text().notNull().default(''),
+  avatar: text().notNull().default(''),
+  createdAt: integer({ mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer({ mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+
+/**
  * AI 供应商表
  * 每条记录代表一个 OpenAI 兼容的 API 供应商（如 OpenAI、DeepSeek、本地 Ollama 等）
  */
 export const providers = sqliteTable('providers', {
   id: integer().primaryKey({ autoIncrement: true }),
+  /** 所属用户 ID */
+  userId: integer().references(() => users.id, { onDelete: 'cascade' }),
   name: text().notNull(), // 显示名称，例如 "DeepSeek"
   baseUrl: text().notNull(), // API base URL
   apiKey: text().notNull().default(''), // API 密钥（敏感，仅服务端读取）
@@ -52,6 +77,8 @@ export type NewModel = typeof models.$inferInsert;
  */
 export const rooms = sqliteTable('rooms', {
   id: integer().primaryKey({ autoIncrement: true }),
+  /** 所属用户 ID */
+  userId: integer().references(() => users.id, { onDelete: 'cascade' }),
   name: text().notNull(), // 例如"卧室"、"工具台"
   description: text().notNull().default(''),
   createdAt: integer({ mode: 'timestamp' })
@@ -64,6 +91,8 @@ export const rooms = sqliteTable('rooms', {
 
 export const tasks = sqliteTable('tasks', {
   id: integer().primaryKey({ autoIncrement: true }),
+  /** 所属用户 ID */
+  userId: integer().references(() => users.id, { onDelete: 'cascade' }),
   /** 关联的房间/场景，null 表示通用任务 */
   roomId: integer().references(() => rooms.id, { onDelete: 'set null' }),
   title: text().notNull(),
@@ -125,6 +154,8 @@ export interface StoredMessage {
 
 export const conversations = sqliteTable('conversations', {
   id: integer().primaryKey({ autoIncrement: true }),
+  /** 所属用户 ID */
+  userId: integer().references(() => users.id, { onDelete: 'cascade' }),
   title: text().notNull().default('新对话'),
   messages: text({ mode: 'json' })
     .$type<StoredMessage[]>()

@@ -1,6 +1,6 @@
 import { streamText } from 'ai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, schema } from '~~/server/db/index';
 
@@ -37,6 +37,7 @@ function toCoreMessage(msg: Msg) {
 }
 
 export default defineEventHandler(async (event) => {
+  const userId = event.context.userId as number;
   const { messages, modelId } = await readValidatedBody(
     event,
     bodySchema.parse,
@@ -45,7 +46,7 @@ export default defineEventHandler(async (event) => {
   let providerModel: ReturnType<ReturnType<typeof createOpenAICompatible>>;
 
   if (modelId) {
-    // Look up model + provider from DB
+    // Look up model + provider from DB, verify ownership via provider.userId
     const [row] = await db
       .select({
         modelId: schema.models.modelId,
@@ -57,7 +58,9 @@ export default defineEventHandler(async (event) => {
         schema.providers,
         eq(schema.models.providerId, schema.providers.id),
       )
-      .where(eq(schema.models.id, modelId))
+      .where(
+        and(eq(schema.models.id, modelId), eq(schema.providers.userId, userId)),
+      )
       .limit(1);
 
     if (!row)

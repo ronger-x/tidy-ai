@@ -9,10 +9,12 @@ const bodySchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
+  const userId = event.context.userId as number;
   const body = await readValidatedBody(event, bodySchema.parse);
   const [row] = await db
     .insert(schema.providers)
     .values({
+      userId,
       name: body.name,
       baseUrl: body.baseUrl,
       apiKey: body.apiKey,
