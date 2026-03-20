@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia';
+import type { ParsedProduct } from '~~/shared/types/db';
 
 export interface Message {
   role: 'user' | 'assistant';
-  /** Raw content (may include ```tasks block for assistant messages) */
+  /** Raw content (may include ```tasks and ```products blocks for assistant messages) */
   content: string;
-  /** Content with ```tasks block stripped – used for MDC rendering */
+  /** Content with ```tasks/```products blocks stripped – used for MDC rendering */
   displayContent?: string;
   /** Thinking/reasoning text (for models that support it) */
   reasoning?: string;
@@ -14,6 +15,8 @@ export interface Message {
   modelLabel?: string;
   /** Parsed tasks attached to this assistant message */
   tasks?: ParsedTask[];
+  /** Parsed standalone product recommendations */
+  products?: ParsedProduct[];
   /** Base64 data URLs for image attachments (user messages only) */
   images?: string[];
 }
@@ -30,6 +33,25 @@ export interface ParsedTask {
   steps: string[];
   /** 重复周期（天），undefined 表示一次性任务 */
   recurrenceInterval?: number;
+  /** 该任务关联的推荐产品 */
+  products?: ParsedProduct[];
+}
+
+/** 解析单个产品对象 */
+function parseProductItem(p: Record<string, unknown>): ParsedProduct {
+  return {
+    key: String(p.key ?? ''),
+    name: String(p.name ?? ''),
+    category: (['cleaner', 'tool', 'storage', 'consumable', 'other'].includes(
+      String(p.category),
+    )
+      ? String(p.category)
+      : 'other') as ParsedProduct['category'],
+    description: String(p.description ?? ''),
+    brand: p.brand ? String(p.brand) : undefined,
+    priceRange: p.priceRange ? String(p.priceRange) : undefined,
+    reason: p.reason ? String(p.reason) : undefined,
+  };
 }
 
 /** Extract ```tasks ... ``` block from assistant reply.
@@ -59,7 +81,23 @@ function parseTasks(content: string): ParsedTask[] {
         typeof t.recurrenceInterval === 'number'
           ? t.recurrenceInterval
           : undefined,
+      products: Array.isArray(t.products)
+        ? (t.products as Array<Record<string, unknown>>).map(parseProductItem)
+        : undefined,
     }));
+  } catch {
+    return [];
+  }
+}
+
+/** Extract ```products ... ``` block (standalone product recommendations) */
+function parseProducts(content: string): ParsedProduct[] {
+  const jsonStr = content.match(/```products\s*([\s\S]*?)```/)?.[1]?.trim();
+  if (!jsonStr) return [];
+  try {
+    const raw = JSON.parse(jsonStr) as Array<Record<string, unknown>>;
+    if (!Array.isArray(raw)) return [];
+    return raw.map(parseProductItem);
   } catch {
     return [];
   }
@@ -77,6 +115,14 @@ export const useChatStore = defineStore('chat', () => {
       .reverse()
       .find((m) => m.role === 'assistant');
     return last?.tasks ?? [];
+  });
+
+  /** Standalone products from the latest assistant message */
+  const pendingProducts = computed<ParsedProduct[]>(() => {
+    const last = [...messages.value]
+      .reverse()
+      .find((m) => m.role === 'assistant');
+    return last?.products ?? [];
   });
 
   /**
@@ -156,18 +202,19 @@ export const useChatStore = defineStore('chat', () => {
         const text = decoder.decode(value, { stream: true });
         assistantMsg.content += text;
 
-        // Strip tasks block for live display
+        // Strip tasks/products blocks for live display
         assistantMsg.displayContent = assistantMsg.content
-          .replace(/```(?:tasks|json)[\s\S]*?```/g, '')
+          .replace(/```(?:tasks|products|json)[\s\S]*?```/g, '')
           .trim();
         // trigger reactivity
         messages.value = [...messages.value];
       }
 
-      // Parse tasks from completed reply and attach to message
+      // Parse tasks and products from completed reply
       assistantMsg.tasks = parseTasks(assistantMsg.content);
+      assistantMsg.products = parseProducts(assistantMsg.content);
       assistantMsg.displayContent = assistantMsg.content
-        .replace(/```(?:tasks|json)[\s\S]*?```/g, '')
+        .replace(/```(?:tasks|products|json)[\s\S]*?```/g, '')
         .trim();
       messages.value = [...messages.value];
 
@@ -209,6 +256,7 @@ export const useChatStore = defineStore('chat', () => {
     streaming,
     currentConversationId,
     pendingTasks,
+    pendingProducts,
     send,
     stop,
     clear,

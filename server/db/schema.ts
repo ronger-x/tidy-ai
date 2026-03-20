@@ -179,3 +179,71 @@ export type TaskStatus = Task['status'];
 
 export type Conversation = typeof conversations.$inferSelect;
 export type NewConversation = typeof conversations.$inferInsert;
+
+/**
+ * 产品表
+ * 存储 AI 推荐的或用户手动添加的清洁/收纳产品
+ */
+export const products = sqliteTable('products', {
+  id: integer().primaryKey({ autoIncrement: true }),
+  userId: integer().references(() => users.id, { onDelete: 'cascade' }),
+  /** AI 生成的唯一标识（如 kitchen_degreaser_spray），用于去重 */
+  sourceKey: text(),
+  name: text().notNull(),
+  category: text({
+    enum: ['cleaner', 'tool', 'storage', 'consumable', 'other'],
+  })
+    .notNull()
+    .default('other'),
+  description: text().notNull().default(''),
+  brand: text().notNull().default(''),
+  /** 价格范围描述，如 "15-35" */
+  priceRange: text().notNull().default(''),
+  /** 购买链接（用户手动填写或未来 API 生成） */
+  purchaseUrl: text().notNull().default(''),
+  imageUrl: text().notNull().default(''),
+  /** 用户评分 0-5 */
+  rating: integer(),
+  status: text({
+    enum: ['recommended', 'bookmarked', 'purchased'],
+  })
+    .notNull()
+    .default('recommended'),
+  /** 用户自定义扩展属性（规格、容量、适用场景等） */
+  metadata: text({ mode: 'json' })
+    .$type<Record<string, unknown>>()
+    .notNull()
+    .default({}),
+  /** AI 推荐理由 */
+  reason: text().notNull().default(''),
+  createdAt: integer({ mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer({ mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+/**
+ * 任务-产品关联表
+ */
+export const taskProducts = sqliteTable('task_products', {
+  id: integer().primaryKey({ autoIncrement: true }),
+  taskId: integer()
+    .notNull()
+    .references(() => tasks.id, { onDelete: 'cascade' }),
+  productId: integer()
+    .notNull()
+    .references(() => products.id, { onDelete: 'cascade' }),
+  createdAt: integer({ mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+export type Product = typeof products.$inferSelect;
+export type NewProduct = typeof products.$inferInsert;
+export type ProductCategory = Product['category'];
+export type ProductStatus = Product['status'];
+
+export type TaskProduct = typeof taskProducts.$inferSelect;
+export type NewTaskProduct = typeof taskProducts.$inferInsert;

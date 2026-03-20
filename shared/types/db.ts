@@ -64,3 +64,47 @@ export interface Task {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type ProductCategory =
+  | 'cleaner'
+  | 'tool'
+  | 'storage'
+  | 'consumable'
+  | 'other';
+export type ProductStatus = 'recommended' | 'bookmarked' | 'purchased';
+
+export interface Product {
+  id: number;
+  sourceKey: string | null;
+  name: string;
+  category: ProductCategory;
+  description: string;
+  brand: string;
+  priceRange: string;
+  purchaseUrl: string;
+  imageUrl: string;
+  rating: number | null;
+  status: ProductStatus;
+  metadata: Record<string, unknown>;
+  reason: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TaskProduct {
+  id: number;
+  taskId: number;
+  productId: number;
+  createdAt: Date;
+}
+
+/** AI 生成的产品推荐（解析后的前端结构） */
+export interface ParsedProduct {
+  key: string;
+  name: string;
+  category: ProductCategory;
+  description: string;
+  brand?: string;
+  priceRange?: string;
+  reason?: string;
+}
