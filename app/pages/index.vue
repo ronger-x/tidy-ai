@@ -195,6 +195,72 @@
                 />
               </div>
             </template>
+
+            <!-- 产品推荐卡片（包含任务内嵌产品 + 独立推荐） -->
+            <template
+              v-if="
+                collectProducts(Number(message.id)).length &&
+                !(
+                  chatStore.streaming &&
+                  Number(message.id) === chatStore.messages.length - 1
+                )
+              "
+            >
+              <div class="mt-3 flex items-center gap-2 px-1">
+                <UIcon
+                  name="i-lucide-shopping-bag"
+                  class="text-primary size-3.5"
+                />
+                <span class="text-muted text-xs font-medium">
+                  推荐了
+                  {{ collectProducts(Number(message.id)).length }}
+                  个清洁/收纳产品
+                </span>
+                <div class="flex-1" />
+                <UButton
+                  v-if="
+                    collectProducts(Number(message.id)).some(
+                      (p) =>
+                        !p.key || !savedProductKeySet.has(p.key),
+                    )
+                  "
+                  size="xs"
+                  variant="soft"
+                  color="primary"
+                  leading-icon="i-lucide-bookmark-plus"
+                  :loading="savingAllProducts.has(Number(message.id))"
+                  @click="saveAllProducts(Number(message.id))"
+                >
+                  一键收藏全部
+                </UButton>
+                <UButton
+                  v-else
+                  size="xs"
+                  variant="soft"
+                  color="success"
+                  leading-icon="i-lucide-check"
+                  to="/products"
+                >
+                  查看产品库
+                </UButton>
+              </div>
+              <div class="mt-2 flex flex-col gap-2">
+                <ProductSuggestionCard
+                  v-for="(product, pi) in collectProducts(
+                    Number(message.id),
+                  )"
+                  :key="pi"
+                  :product="product"
+                  :saved="
+                    !!(
+                      product.key &&
+                      savedProductKeySet.has(product.key)
+                    )
+                  "
+                  @save="saveSingleProduct(product)"
+                />
+              </div>
+            </template>
           </template>
         </template>
 
@@ -331,12 +397,14 @@
 
 <script setup lang="ts">
 import type { ParsedTask } from '~/stores/chat';
+import type { ParsedProduct } from '~~/shared/types/db';
 import type { DefineComponent } from 'vue';
 import ProseStreamPre from '~/components/prose/PreStream.vue';
 import { useClipboard } from '@vueuse/core';
 
 const chatStore = useChatStore();
 const tasksStore = useTasksStore();
+const productsStore = useProductsStore();
 const providersStore = useProvidersStore();
 const conversationsStore = useConversationsStore();
 const toast = useToast();
@@ -390,6 +458,10 @@ const addedKeySet = computed(
   () => new Set(tasksStore.tasks.map((t) => t.sourceKey).filter(Boolean)),
 );
 const savingAll = ref(new Set<number>());
+
+/** 通过 sourceKey 判断产品是否已保存（去重） */
+const savedProductKeySet = computed(() => productsStore.savedKeySet);
+const savingAllProducts = ref(new Set<number>());
 
 // ── Image upload ─────────────────────────────────────────────────────────────
 
@@ -457,7 +529,7 @@ const suggestions = [
 // ── Chat ─────────────────────────────────────────────────────────────────────
 
 function stripTasksBlock(content: string) {
-  return content.replace(/```(?:tasks|json)[\s\S]*?```/g, '').trim();
+  return content.replace(/```(?:tasks|products|json)[\s\S]*?```/g, '').trim();
 }
 
 async function handleSend() {
@@ -550,6 +622,75 @@ async function addAllTasks(msgIdx: number, tasks: ParsedTask[]) {
   } finally {
     savingAll.value.delete(msgIdx);
     savingAll.value = new Set(savingAll.value);
+  }
+}
+
+// ── Product management ──────────────────────────────────────────────────────
+
+/** 收集某条消息中的所有产品（任务内嵌 + 独立推荐） */
+function collectProducts(msgIdx: number): ParsedProduct[] {
+  const msg = chatStore.messages[msgIdx];
+  if (!msg) return [];
+  const all: ParsedProduct[] = [];
+  // 任务内嵌的产品
+  if (msg.tasks) {
+    for (const task of msg.tasks) {
+      if (task.products) all.push(...task.products);
+    }
+  }
+  // 独立推荐的产品
+  if (msg.products) all.push(...msg.products);
+  // 按 key 去重
+  const seen = new Set<string>();
+  return all.filter((p) => {
+    if (!p.key || seen.has(p.key)) return false;
+    seen.add(p.key);
+    return true;
+  });
+}
+
+async function saveSingleProduct(product: ParsedProduct) {
+  try {
+    await productsStore.saveProducts([product]);
+    toast.add({
+      title: '产品已收藏',
+      description: product.name,
+      color: 'success',
+      icon: 'i-lucide-bookmark-check',
+    });
+  } catch {
+    toast.add({
+      title: '收藏失败',
+      color: 'error',
+      icon: 'i-lucide-alert-circle',
+    });
+  }
+}
+
+async function saveAllProducts(msgIdx: number) {
+  savingAllProducts.value = new Set(savingAllProducts.value).add(msgIdx);
+  try {
+    const all = collectProducts(msgIdx);
+    const toSave = all.filter(
+      (p) => !p.key || !savedProductKeySet.value.has(p.key),
+    );
+    if (!toSave.length) return;
+    await productsStore.saveProducts(toSave);
+    toast.add({
+      title: '产品已保存',
+      description: `${toSave.length} 个产品已添加到产品库`,
+      color: 'success',
+      icon: 'i-lucide-bookmark-check',
+    });
+  } catch {
+    toast.add({
+      title: '保存失败',
+      color: 'error',
+      icon: 'i-lucide-alert-circle',
+    });
+  } finally {
+    savingAllProducts.value.delete(msgIdx);
+    savingAllProducts.value = new Set(savingAllProducts.value);
   }
 }
 
