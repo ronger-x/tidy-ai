@@ -132,6 +132,47 @@
           </label>
         </div>
 
+        <!-- 关联产品 -->
+        <div
+          v-if="linkedProducts.length"
+          class="border-default border-t px-4 py-2"
+        >
+          <div class="mb-1 flex items-center gap-1.5">
+            <UIcon
+              name="i-lucide-shopping-bag"
+              class="text-primary size-3"
+            />
+            <p class="text-muted text-xs font-medium">推荐产品</p>
+          </div>
+          <div class="flex flex-col gap-1">
+            <div
+              v-for="p in linkedProducts"
+              :key="p.id"
+              class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors hover:bg-elevated"
+            >
+              <span class="text-highlighted font-medium">{{ p.name }}</span>
+              <UBadge v-if="p.brand" variant="soft" color="neutral" size="xs">
+                {{ p.brand }}
+              </UBadge>
+              <UBadge
+                v-if="p.priceRange"
+                variant="soft"
+                color="warning"
+                size="xs"
+              >
+                ¥{{ p.priceRange }}
+              </UBadge>
+              <div class="flex-1" />
+              <NuxtLink
+                to="/products"
+                class="text-primary text-xs hover:underline"
+              >
+                查看
+              </NuxtLink>
+            </div>
+          </div>
+        </div>
+
         <!-- Action buttons -->
         <div class="border-default flex justify-end gap-2 border-t px-4 py-2">
           <UButton
@@ -211,6 +252,7 @@
 
 <script setup lang="ts">
 import type { Task } from "#shared/types/db";
+import type { Product } from "#shared/types/db";
 
 const props = defineProps<{
   task: Task;
@@ -224,6 +266,22 @@ const roomsStore = useRoomsStore();
 
 const expanded = ref(false);
 const localSteps = ref<boolean[]>([]);
+
+// 关联产品
+const linkedProducts = ref<Product[]>([]);
+
+// 展开时加载关联产品
+watch(expanded, async (isExpanded) => {
+  if (isExpanded && linkedProducts.value.length === 0) {
+    try {
+      linkedProducts.value = await $fetch<Product[]>(
+        `/api/tasks/${props.task.id}/products`,
+      );
+    } catch {
+      // 静默失败，产品不影响核心功能
+    }
+  }
+});
 
 // Initialize local step state
 watch(
