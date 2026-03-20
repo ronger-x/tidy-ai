@@ -36,6 +36,11 @@
       "sourceType": "github",
       "computedHash": "6954d6eee3f091d66d76c3c1d006e3e5f2ae101bfb46c3fbe714adad39f6caef"
     },
+    "nuxthub": {
+      "source": "onmax/nuxt-skills",
+      "sourceType": "github",
+      "computedHash": "f366b6a08c9a6806a4b0de604fd2128116455eb70bace08a8701023f9c7853e1"
+    },
     "pnpm": {
       "source": "onmax/nuxt-skills",
       "sourceType": "github",
@@ -44,7 +49,7 @@
     "reka-ui": {
       "source": "onmax/nuxt-skills",
       "sourceType": "github",
-      "computedHash": "293d1660c244cbfe3136b66c3457f2a804a548e24557211d0a9f5cbe51e08d69"
+      "computedHash": "21b02f427f87c7ad2c65dd5865c08d47d1ea6901338c4a94a7990b47600dfba5"
     },
     "tresjs": {
       "source": "onmax/nuxt-skills",
@@ -56,6 +61,11 @@
       "sourceType": "github",
       "computedHash": "5bcf87721302cb40e3e760271279bd72c106c085b8c4a82196dd5d8cabe4e0dc"
     },
+    "vite": {
+      "source": "onmax/nuxt-skills",
+      "sourceType": "github",
+      "computedHash": "bfce47b3705ca5d9ae2ac38f273b2a024f56c0ea8b75860d0b40cdb905cf235b"
+    },
     "vue": {
       "source": "onmax/nuxt-skills",
       "sourceType": "github",
@@ -64,7 +74,57 @@
     "vueuse": {
       "source": "onmax/nuxt-skills",
       "sourceType": "github",
-      "computedHash": "dd482ed1393b41dee693ea51fd5e221fe5e9150c3d4db5f97cec7795d8ce9f6d"
+      "computedHash": "ccf16b90420f61e9db1c573c7e948091bdfd9114a834b22e9cb58ae2b81a5f3a"
+    },
+    "write-a-prd": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "computedHash": "d4234a2ebcf89b745a9e33f7e0831aef6ff5cbe48f91db54796ae7cd897d78a8"
+    },
+    "prd-to-plan": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "computedHash": "887cc31b676d3c507c00534ce7eea3daed032cd5ed491105f75b4f8bbb5254e8"
+    },
+    "prd-to-issues": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "computedHash": "a23b5b7715867634eaa65fbab871368e7da476dd3f6aab541e365f3bb2353a51"
+    },
+    "tdd": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "computedHash": "edaa0589ea7b30f02e10362108c0b2149aafbdca903728d7f61bda557712babe"
+    },
+    "grill-me": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "computedHash": "4ec21b4e3b25ca014c92fe19552bbca8e53211aa74bcf5b00721d1e6d9fc9660"
+    },
+    "triage-issue": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "computedHash": "52d140e5ea2b16536d91c541aed110a2f7e74d87ad460c5e23a78bbd080ed14b"
+    },
+    "improve-codebase-architecture": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "computedHash": "c5a741b2bcfcee98e073df7d34d01b3d1fe7d90118d1d8f0fecf13b56f1c574c"
+    },
+    "request-refactor-plan": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "computedHash": "4de61540351fee4db9b18352c53023a9c586f574e7291fafa0e88793a3f6609a"
+    },
+    "design-an-interface": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "computedHash": "88193ab179032918cdea0afe74b8610d6d079ac51191f286c10e9e47839a9e6b"
+    },
+    "ubiquitous-language": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "computedHash": "0d4a78c7ac9d682716eeaa606b3bb585878b6952f5b3515909a880b96de077bc"
     }
   }
 }
